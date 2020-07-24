@@ -1,0 +1,19 @@
+#!/sbin/openrc-run
+# Copyright 2020 Gentoo Authors
+# Distributed under the terms of the GNU General Public License v2
+
+name="pyfancontrol daemon"
+description=""
+command=/usr/bin/pyfancontrol
+command_args="${pyfancontrol_args}"
+pidfile="/var/run/"${RC_SVCNAME}".pid"
+command_background=true
+command_user="pyfancontrol:pyfancontrol"
+output_logger="logger -p daemon.info"
+error_logger="logger -p daemon.error"
+
+start(){
+	chown -R :pyfancontrol /sys/class/hwmon/hwmon?/
+	chmod -R g+rwX         /sys/class/hwmon/hwmon?/
+	default_start
+}

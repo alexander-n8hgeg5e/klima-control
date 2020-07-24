@@ -1,0 +1,1 @@
+SUBSYSTEM=="tty", ATTRS{idVendor}=="2341", ATTRS{idProduct}=="0043", OWNER="root", GROUP="rfcontrol" MODE="0660", SYMLINK+="rfcontrol"
