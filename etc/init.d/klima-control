@@ -2,18 +2,37 @@
 # Copyright 2020 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
-name="pyfancontrol daemon"
-description=""
-command=/usr/bin/pyfancontrol
-command_args="${pyfancontrol_args}"
-pidfile="/var/run/"${RC_SVCNAME}".pid"
-command_background=true
-command_user="pyfancontrol:pyfancontrol"
+name="klima-control daemon"
+description="controls the air conditioner"
+
+command="/usr/bin/klima-control"
+command_args="${klima_control_args}"
+command_user="klima-control:klima-control"
+
 output_logger="logger -p daemon.info"
 error_logger="logger -p daemon.error"
+# the last 2 lines need
+command_background=1
+# what implies --make--pidfile and --pidfile
+# so it needs the next line
+pidfile="/var/run/"${RC_SVCNAME}".pid"
+
+stopsig="SIGINT"
+retry="SIGINT/120 SIGINT/30 SIGTERM/10 SIGKILL/5"
 
 start(){
-	chown -R :pyfancontrol /sys/class/hwmon/hwmon?/
-	chmod -R g+rwX         /sys/class/hwmon/hwmon?/
+    backup_umask=$(umask)
+    umask 027
+    mkdir -p /run/klima-control
+    touch /run/klima-control/fan_running
+    touch /run/klima-control/fan_start_time
+    touch /run/klima-control/klima_running
+    touch /run/klima-control/klima_start_time
+    touch /run/klima-control/state
+    chown -R klima-control:klima-control /run/klima-control
+    chmod -R g+rX /run/klima-control
+    umask $backup_umask
 	default_start
 }
+
+# vim: syntax=sh :
