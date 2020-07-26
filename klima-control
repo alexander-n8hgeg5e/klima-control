@@ -14,6 +14,7 @@ RUN_FILENAMES = {
                 'klima_start_time'  :  'klima_start_time', 
                 'state'             :  'state',            
                 'target_temp'       :  'target_temp',            
+                'hysteresis'        :  'hysteresis',
                 }
 RUN_SUBDIR = "klima-control"
 RUN_PATH   = "/run/" + RUN_SUBDIR
@@ -303,21 +304,21 @@ def is_sleeping_time():
         return True
     return False
 
-def get_target_temp():
+def get_value_from_file(name):
     try:
-        p = RUN_PATH + "/" + RUN_FILENAMES['target_temp']
+        p = RUN_PATH + "/" + RUN_FILENAMES[name]
         with open(p) as f:
-            t = float(f.read().decode().strip())
+            v = eval(f.read().decode().strip())
     except Exception as e:
         log_exp( ERR, e )
-        t = args.target_temp
-    return t
+        v = getattr(args,name)
+    return v
 
-def store_target_temp(t):
+def store_value_to_file(name,v):
     try:
-        p = RUN_PATH + "/" + RUN_FILENAMES['target_temp']
+        p = RUN_PATH + "/" + RUN_FILENAMES[name]
         with open(p,"wt") as f:
-            f.write(repr(t))
+            f.write(repr(v))
     except Exception as e:
         log_exp( ERR, e )
 
@@ -355,7 +356,9 @@ def init():
         global localtime
         from time import localtime
     if not args.target_temp is None:
-        store_target_temp(args.target_temp)
+        store_value_to_file("target_temp",args.target_temp)
+    if not args.hysteresis is None:
+        store_value_to_file("hysteresis",args.hysteresis)
 
 
 #-------------------#
@@ -397,7 +400,8 @@ def run_handle_exception(function):
 
 def _control_loop():
     while True:
-        target  = get_target_temp()
+        target     = get_value_from_file("target_temp")
+        hysteresis = get_value_from_file("hysteresis")
         mintemp = target-(args.hysteresis/2)
         maxtemp = target+(args.hysteresis/2)
         if not args.night_sleep is None and is_sleeping_time():
