@@ -1,5 +1,5 @@
 #!/usr/bin/python3
-from pylib.syslog_utils import warn,err,info,log,WARN,ERR,INFO,warn_exp,debug,DEBUG
+from pylib.syslog_utils import warn,err,info,log,WARN,ERR,INFO,warn_exp,debug,DEBUG,log_exp
 from syslog import LOG_LOCAL0 as LOGFACILITY,LOG_USER
 from subprocess import check_call,call,check_output,DEVNULL,CalledProcessError
 from time import sleep,time
@@ -13,8 +13,10 @@ RUN_FILENAMES = {
                 'klima_running'     :  'klima_running',    
                 'klima_start_time'  :  'klima_start_time', 
                 'state'             :  'state',            
+                'target_temp'       :  'target_temp',            
                 }
 RUN_SUBDIR = "klima-control"
+RUN_PATH   = "/run/" + RUN_SUBDIR
 USERNAME  ="klima-control"
 GROUPNAME ="klima-control"
 
@@ -301,6 +303,24 @@ def is_sleeping_time():
         return True
     return False
 
+def get_target_temp():
+    try:
+        p = RUN_PATH + "/" + RUN_FILENAMES['target_temp']
+        with open(p) as f:
+            t = float(f.read().decode().strip())
+    except Exception as e:
+        log_exp( ERR, e )
+        t = args.target_temp
+    return t
+
+def store_target_temp(t):
+    try:
+        p = RUN_PATH + "/" + RUN_FILENAMES['target_temp']
+        with open(p,"wt") as f:
+            f.write(repr(t))
+    except Exception as e:
+        log_exp( ERR, e )
+
 
 #----------------#
 # init functions #
@@ -334,6 +354,8 @@ def init():
     if not args.night_sleep is None:
         global localtime
         from time import localtime
+    if not args.target_temp is None:
+        store_target_temp(args.target_temp)
 
 
 #-------------------#
@@ -374,10 +396,10 @@ def run_handle_exception(function):
         instant_off()
 
 def _control_loop():
-    target=args.target_temp
-    mintemp=target-(args.hysteresis/2)
-    maxtemp=target+(args.hysteresis/2)
     while True:
+        target  = get_target_temp()
+        mintemp = target-(args.hysteresis/2)
+        maxtemp = target+(args.hysteresis/2)
         if not args.night_sleep is None and is_sleeping_time():
             # sleeping time stop
             if args.verbose:
@@ -429,7 +451,7 @@ def control_loop():
 def parse_args():
     from argparse import ArgumentParser
     ap=ArgumentParser()
-    ap.add_argument(dest='target_temp',type=float,nargs="?",default=27)
+    ap.add_argument('-t','--target_temp', type=float, default=27 )
     ap.add_argument('-sd','--shutdown',action="store_true",help="only shutdown and exit")
     ap.add_argument('--test',action="store_true",help="run test",default=False)
     ap.add_argument('--verbose',action="store_true",default=False)
