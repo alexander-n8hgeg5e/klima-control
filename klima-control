@@ -47,6 +47,7 @@ sw_states = {
                 "fan_running"        : None,
                 }
 ensure_state_count=0
+open_files={}
 ENSURE_STATE_INTERVAL = 10
 NUM_INITIAL_ENSURE_STATE=1
 
@@ -325,6 +326,23 @@ def store_value_to_file(name,v):
     except Exception as e:
         log_exp( ERR, e )
 
+def store_value_to_file_keep_open(name,v):
+    try:
+        p = RUN_PATH + "/" + RUN_FILENAMES[name]
+        global open_files
+        if not name in open_files.keys():
+            f = open(p,"wt+")
+            open_files.update({ name : f })
+        f = open_files[name]
+        f.seek(0)    
+        f.write(repr(v))
+    except Exception as e:
+        log_exp( ERR, e )
+
+def close_open_files():
+    global open_files
+    for f in open_files:
+        f.close()
 
 #----------------#
 # init functions #
@@ -402,6 +420,7 @@ def run_handle_exception(function):
             warn_exp(ee)
     finally:
         instant_off()
+        close_open_files()
 
 def _control_loop():
     while True:
@@ -492,22 +511,6 @@ if __name__=='__main__':
     if args.test:
         print(args)
         exit()
-        #LOOPSLEEPTIME=1
-        #COOLDOWN_CYLCES=1
-        #COOLDOWN_CYLCE_SLEEP=0.4
-        #COOLDOWN_FINAL_FANTIME=5
-
-        #test_temp=50.0
-        #test_temp_d=0
-        #def get_temp():
-        #    global test_temp
-        #    global test_temp_d
-        #    if states[0] in (FREEZING,VENTILATING):
-        #        test_temp_d-=0.005
-        #    else:
-        #        test_temp_d+=0.005
-        #    test_temp+=test_temp_d*test_temp
-        #    return test_temp
     init()
     if args.shutdown:
         cooldown()
