@@ -1,0 +1,59 @@
+#!/usr/bin/env python3
+
+from os import listdir,stat
+from time import sleep,time
+import os
+#print(dir(os))
+from sys import exit,stdout
+#exit()
+#from pprint import pprint
+RUN_DIR="/run/klima-control"
+
+open_files_spinners={}
+
+def spinner(name,f):
+    global open_files_spinners
+    chars = ['-','\\','|','/']
+    i=open_files_spinners[name]
+    mtime0 = open_files_mtime[name]
+    mtime1 = stat(f).st_mtime
+    if mtime1 > mtime0:
+        open_files_mtime[name]=mtime1
+        i+=1
+        if i >= 4:
+            i=0
+        open_files_spinners[name]=i
+    return chars[i]
+open_files_spinners = ({'room_temp' : 0 })
+open_files_mtime    = ({'room_temp' : 0 })
+
+while True:
+    dirlist=listdir(RUN_DIR)
+    files=[]
+    for f in dirlist:
+        if not f[0]==".":
+            files.append(RUN_DIR+"/"+f)
+    data={}
+    for f in files:
+        name=f[19:]
+        with open(f) as ff:
+            try:
+                val = eval(ff.read())
+            except SyntaxError:
+                val = None
+        data.update({name:val})
+    maxlen=max([len(i) for i in data.keys()])
+    l=maxlen+1
+    prefix  = "{:>"+str(l)+"."+str(l)+"} = "
+    for k,v in data.items():
+        postfix = "{}"
+        if not v is None:
+            if len(k) >= 9:
+                name=k[-9:]
+                if  name == "room_temp":
+                    postfix = "{} "+ spinner(name,RUN_DIR+"/"+name)
+        else:
+            postfix="{}"
+        print((prefix+postfix).format(k,v))
+    stdout.buffer.write( 0x1b5b481b5b4a1b5b334a.to_bytes(20,"big") )
+    sleep(1)

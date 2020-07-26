@@ -23,4 +23,6 @@ src_install(){
 
 	dobin klima-control
 	udev_dorules etc/udev/rules.d/10-klima-control.rules
+	dobin show_klima_state
+	dobin count_klima_runtime
 }
