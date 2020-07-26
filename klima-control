@@ -16,6 +16,7 @@ RUN_FILENAMES = {
                 'target_temp'       :  'target_temp',            
                 'hysteresis'        :  'hysteresis',
                 'night_sleep'       :  'night_sleep',
+                'room_temp'         :  'room_temp',
                 }
 RUN_SUBDIR = "klima-control"
 RUN_PATH   = "/run/" + RUN_SUBDIR
@@ -279,7 +280,7 @@ def read_start_time(name):
 #------------#
 #  get data  #
 #------------#
-def get_temp():
+def get_temp(write_to_file=True):
     cmd=['get_room_temp']
     try:
         T = float(check_output(cmd).decode().strip())
@@ -288,6 +289,8 @@ def get_temp():
     except Exception as e:
         print(e,file=stderr)
         T = inf
+    if write_to_file:
+        store_value_to_file("room_temp",T)
     return T
 
 def is_sleeping_time():
