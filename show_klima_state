@@ -5,6 +5,7 @@ from time import sleep,time
 import os
 #print(dir(os))
 from sys import exit,stdout
+from math import inf
 #exit()
 #from pprint import pprint
 RUN_DIR="/run/klima-control"
