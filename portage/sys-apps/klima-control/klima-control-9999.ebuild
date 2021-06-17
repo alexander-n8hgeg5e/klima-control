@@ -6,7 +6,7 @@ inherit git-r3 udev
 DESCRIPTION="controls the air conditioner"
 HOMEPAGE=""
 EGIT_REPO_URI="${CODEDIR}""/klima-control https://github.com/alexander-n8hgeg5e/klima-control.git"
-LICENSE="gpl3"
+LICENSE="GPL-3"
 SLOT="0"
 KEYWORDS="~amd64 ~x86"
 IUSE=""
