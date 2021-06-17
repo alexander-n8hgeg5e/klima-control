@@ -10,6 +10,17 @@ from math import inf
 #from pprint import pprint
 RUN_DIR="/run/klima-control"
 
+# import STATES
+from importlib.util import spec_from_loader, module_from_spec
+from importlib.machinery import SourceFileLoader
+from sys import modules
+spec = spec_from_loader("klima_control", SourceFileLoader("klima_control", "/usr/bin/klima-control"))
+modules['klima_control'] = module_from_spec(spec)
+spec.loader.exec_module(modules['klima_control'])
+from klima_control import STATES
+
+STATES_inv = {v: k for k, v in STATES.items()}
+
 open_files_spinners={}
 
 def spinner(name,f):
@@ -53,6 +64,8 @@ while True:
                 name=k[-9:]
                 if  name == "room_temp":
                     postfix = "{} "+ spinner(name,RUN_DIR+"/"+name)
+            elif k == "state":
+                v=STATES_inv[v]
         else:
             postfix="{}"
         print((prefix+postfix).format(k,v))
