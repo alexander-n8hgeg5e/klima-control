@@ -1,11 +1,18 @@
 #!/usr/bin/env python3
 
+RATE_DISTANCES = 60, 300 , 900
+AVG_DISTANCES   = 11, 21 , 61  # have to be odd numbers
+#RATE_DISTANCES  = 1, 30 , 90
+#AVG_DISTANCES   = 3, 11 , 11  # have to be odd numbers
+rate_SCALE = 1e6
+
 from os import listdir,stat
 from time import sleep,time
 import os
 #print(dir(os))
 from sys import exit,stdout
 from math import inf
+from collections import OrderedDict as OD
 #exit()
 #from pprint import pprint
 RUN_DIR="/run/klima-control"
@@ -23,7 +30,7 @@ STATES_inv = {v: k for k, v in STATES.items()}
 
 open_files_spinners={}
 
-def spinner(name,f):
+def files_changed_spinner(name,f):
     global open_files_spinners
     chars = ['-','\\','|','/']
     i=open_files_spinners[name]
@@ -36,8 +43,84 @@ def spinner(name,f):
             i=0
         open_files_spinners[name]=i
     return chars[i]
+
+spinner_state = [0,0]
+def spinner(n):
+    global spinner_state
+    chars = ['-','\\','|','/']
+    if spinner_state[n]  == 4:
+        spinner_state[n] = 0
+    spinner_state[n] += 1
+    return chars[spinner_state[n]-1]
+
 open_files_spinners = ({'room_temp' : 0 })
 open_files_mtime    = ({'room_temp' : 0 })
+
+def sortfunc(v):
+    order=[]
+    order.append("room_temp")
+    order.append("rates")
+    order.append("a0")
+    order.append("a1")
+    order.append("a2")
+    k = v[0]
+    if k in order:
+        return order.index(v[0])
+    else:
+        return len(k)
+
+def calc_rate(room_temps,distance,avg_distance):
+    required_len = distance + avg_distance
+    if len(room_temps) >= required_len :
+        avg_offset = int((avg_distance - 1) / 2)
+        pos1 = - 1 - avg_offset
+        pos0 = pos1 - distance
+        past0_avg_start_pos = pos0 - avg_offset
+        past0_avg  = room_temps[ past0_avg_start_pos : past0_avg_start_pos + avg_distance]
+        past1_avg  = room_temps[ - avg_distance :]
+        past0_avg  = [ i[1] for i in past0_avg]
+        past1_avg  = [ i[1] for i in past1_avg]
+        past0_avg  = sum(past0_avg)/avg_distance
+        past1_avg  = sum(past1_avg)/avg_distance
+        precise_distance = room_temps[ pos1 ][0] - room_temps[ pos0 ][0]
+        #print(f"d={distance} avgd = {avg_distance}")
+        #print(f"pos0 = {pos0} pos1 = {pos1}")
+        #print(f"len(room_temps) = {len(room_temps)} required_len = {required_len}")
+        #print(f"precise_distance = {precise_distance}")
+        #print(f"past0_avg = {past0_avg}")
+        #print(f"past1_avg = {past1_avg}")
+        return (past1_avg - past0_avg) / precise_distance
+
+def gen_rate_arrow(rate):
+    arrow=[]
+    if rate < 0:
+        arrow.append("  ||  ")
+        arrow.append(" \  / ")
+        arrow.append("  \/  ")
+    if rate > 0:
+        arrow.append("  /\  ")
+        arrow.append(" /  \ ")
+        arrow.append("  ||  ")
+    if rate == 0:
+        arrow.append(" ____ ")
+        arrow.append(" ---- ")
+        arrow.append("      ")
+    return arrow
+
+def gen_rate_arrows(rates):
+    while None in rates:
+        rates.pop(rates.index(None))
+    arrows=[gen_rate_arrow(rate) for rate in rates]
+    la0 = len(arrows)
+    if la0 == 0:
+        return
+    concat_arrows=[]
+    for i in range(len(arrows[0])):
+        concat_arrows.append( "   " + "   ".join([arrow[i] for arrow in arrows]) )
+    return concat_arrows
+
+
+room_temps = []
 
 while True:
     dirlist=listdir(RUN_DIR)
@@ -45,29 +128,50 @@ while True:
     for f in dirlist:
         if not f[0]==".":
             files.append(RUN_DIR+"/"+f)
-    data={}
+    data=OD()
     for f in files:
-        name=f[19:]
+        name = f[19:]
         with open(f) as ff:
             try:
                 val = eval(ff.read())
             except SyntaxError:
                 val = None
-        data.update({name:val})
-    maxlen=max([len(i) for i in data.keys()])
+        data[name] = val
+    maxlen = max([len(i) for i in data.keys()])
     l=maxlen+1
     prefix  = "{:>"+str(l)+"."+str(l)+"} = "
+    room_temps.append((time(),data['room_temp']))
+    # shorten regulary if to long
+    if len(room_temps) % 50 == 0:
+        required_len = max(RATE_DISTANCES) + max(AVG_DISTANCES)
+        room_temps=room_temps[-required_len:]
+    rates=[]
+    for i in range(len(RATE_DISTANCES)):
+        rate = calc_rate(room_temps,RATE_DISTANCES[i],AVG_DISTANCES[i])
+        rates.append(rate)
+    data["rates"]=rates
+    arrows=gen_rate_arrows(rates)
+    if not arrows is None:
+        for i in range(len(arrows)):
+            data[f"a{i}"] = arrows[i]
+    data=OD(sorted(data.items(), key = sortfunc))
     for k,v in data.items():
         postfix = "{}"
         if not v is None:
-            if len(k) >= 9:
-                name=k[-9:]
-                if  name == "room_temp":
-                    postfix = "{} "+ spinner(name,RUN_DIR+"/"+name)
+            if  k == "room_temp":
+                postfix = "{} "+ spinner(0) + " " + files_changed_spinner(k,RUN_DIR+"/"+k) + " " + spinner(1)
             elif k == "state":
                 v=STATES_inv[v]
         else:
             postfix="{}"
-        print((prefix+postfix).format(k,v))
+        if k == "rates":
+            postfix=" ".join(["{:+8.0f}"]*len(v))
+            if len(v) > 0 :
+                postfix += "   " + f"[{1/rate_SCALE}*1/s]"
+            v=[i*rate_SCALE for i in v]
+            print((prefix+postfix).format(k,*v))
+        else:
+            print((prefix+postfix).format(k,v))
     stdout.buffer.write( 0x1b5b481b5b4a1b5b334a.to_bytes(20,"big") )
     sleep(1)
+# vim: foldmethod=indent foldnestmax=10 foldlevel=2 syntax=python :
