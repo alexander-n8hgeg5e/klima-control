@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
-RATE_DISTANCES = 60, 300 , 900
-AVG_DISTANCES   = 11, 21 , 61  # have to be odd numbers
+RATE_DISTANCES  = 30, 60, 300 , 600,  900, 1200
+AVG_DISTANCES   = 21, 41, 201 , 401,  601,  801  # have to be odd numbers
 #RATE_DISTANCES  = 1, 30 , 90
 #AVG_DISTANCES   = 3, 11 , 11  # have to be odd numbers
 rate_SCALE = 1e6
@@ -59,15 +59,16 @@ open_files_mtime    = ({'room_temp' : 0 })
 def sortfunc(v):
     order=[]
     order.append("room_temp")
+    order.append("avg_distances")
     order.append("rates")
     order.append("a0")
     order.append("a1")
     order.append("a2")
     k = v[0]
     if k in order:
-        return order.index(v[0])
+        return order.index(k)
     else:
-        return len(k)
+        return len(k)+10
 
 def calc_rate(room_temps,distance,avg_distance):
     required_len = distance + avg_distance
@@ -150,6 +151,7 @@ while True:
         rate = calc_rate(room_temps,RATE_DISTANCES[i],AVG_DISTANCES[i])
         rates.append(rate)
     data["rates"]=rates
+    data["avg_distances"] = [i for i in zip(RATE_DISTANCES,AVG_DISTANCES)]
     arrows=gen_rate_arrows(rates)
     if not arrows is None:
         for i in range(len(arrows)):
@@ -165,11 +167,15 @@ while True:
         else:
             postfix="{}"
         if k == "rates":
-            postfix=" ".join(["{:+8.0f}"]*len(v))
+            postfix0=" ".join(["{:+8.0f}"]*len(v))
+            postfix1 = postfix0
             if len(v) > 0 :
-                postfix += "   " + f"[{1/rate_SCALE}*1/s]"
-            v=[i*rate_SCALE for i in v]
-            print((prefix+postfix).format(k,*v))
+                postfix0 += "   " + f"[{1/rate_SCALE}*K/s]"
+                postfix1 += "   " + f"[min/K]"
+            v0 = [i*rate_SCALE for i in v]
+            v1 = [ (1/i/60) if not i == 0 else inf for i in v]
+            print((prefix+postfix0).format(k,*v0))
+            print((prefix+postfix1).format(k,*v1))
         else:
             print((prefix+postfix).format(k,v))
     stdout.buffer.write( 0x1b5b481b5b4a1b5b334a.to_bytes(20,"big") )
