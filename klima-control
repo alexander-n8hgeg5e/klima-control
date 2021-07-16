@@ -27,6 +27,7 @@ LOOPSLEEPTIME=10
 COOLDOWN_CYLCES=2
 COOLDOWN_CYLCE_SLEEP=20
 COOLDOWN_FINAL_FANTIME=20
+DEFAULT_HYSTERESIS=1.5
 
 STATES =    {
             "UNKNOWN"     : -1,
@@ -345,6 +346,12 @@ def close_open_files():
     for f in open_files:
         f.close()
 
+def get_hysteresis():
+    val = get_value_from_file("hysteresis")
+    val = float(val)
+    if 0 <= val:
+        return val
+
 #----------------#
 # init functions #
 #----------------#
@@ -385,6 +392,10 @@ def init():
         store_value_to_file("target_temp",args.target_temp)
     if not args.hysteresis is None:
         store_value_to_file("hysteresis",args.hysteresis)
+    else:
+        val = get_hysteresis()
+        if val is None:
+            store_value_to_file("hysteresis",DEFAULT_HYSTERESIS)
     if not args.night_sleep is None:
         store_value_to_file("night_sleep",args.night_sleep)
 
@@ -491,7 +502,7 @@ def parse_args():
     ap.add_argument('--fan-only',action="store_true",default=False)
     ap.add_argument('--debug',action="store_true",default=False)
     ap.add_argument('--state',action="store",default=UNKNOWN)
-    ap.add_argument('--hysteresis',type=float,default=1.5)
+    ap.add_argument('--hysteresis',type=float,default=None)
     ap.add_argument('--night-sleep',nargs=2,metavar=('START-SLEEP-TIME','STOP-SLEEP-TIME'),type=float,default=None,help='makes the klima sleep during the time interval')
     ap.add_argument('--testing',action="store_true",default=False)
     ap.add_argument('-G','--print-run-files-gen-cmds',action="store_true",default=False)
