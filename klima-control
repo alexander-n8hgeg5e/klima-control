@@ -331,19 +331,6 @@ def store_value_to_file(name,v):
     except Exception as e:
         log_exp( ERR, e )
 
-def store_value_to_file_keep_open(name,v):
-    try:
-        p = RUN_PATH + "/" + RUN_FILENAMES[name]
-        global open_files
-        if not name in open_files.keys():
-            f = open(p,"wt+")
-            open_files.update({ name : f })
-        f = open_files[name]
-        f.seek(0)    
-        f.write(repr(v))
-    except Exception as e:
-        log_exp( ERR, e )
-
 def close_open_files():
     global open_files
     for f in open_files:
