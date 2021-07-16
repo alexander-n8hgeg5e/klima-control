@@ -361,7 +361,11 @@ def print_run_files_gen_cmds():
 def init():
     global states
     global sw_states
-    update_state(args.state)
+
+    if args.state == UNKNOWN:
+        state = read_state()
+    update_state(state)
+
     if args.debug:
         print("DEBUG: init with states={}".format(states))
         print("DEBUG: init with sw_states={}".format(sw_states))
@@ -493,8 +497,6 @@ def parse_args():
     ap.add_argument('-G','--print-run-files-gen-cmds',action="store_true",default=False)
     global args
     args=ap.parse_args()
-    if not args.print_run_files_gen_cmds:
-        args.state=read_state()
     try:
         args.state=int(args.state)
     except ValueError:
