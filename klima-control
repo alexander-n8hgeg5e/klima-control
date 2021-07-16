@@ -330,21 +330,31 @@ def store_value_to_file(name,v):
     except Exception as e:
         log_exp( ERR, e )
 
-def get_hysteresis():
-    val = get_value_from_file("hysteresis")
-    val = float(val)
-    if 0 <= val:
-        return val
-
-def get_night_sleep():
+def get_check_val(check_val,name):
     try:
-        val = get_value_from_file("night_sleep")
-        float(val[0])
-        float(val[1])
+        val = get_value_from_file(name)
+        check_val(val)
         return val
     except:
         return None
 
+
+def check_hysteresis(val):
+    val = float(val)
+    if not 0 <= val:
+        raise ValueError()
+    return val
+
+def check_night_sleep(val):
+    float(val[0])
+    float(val[1])
+    return val
+
+def check_target_temp(val):
+    float(val)
+
+def get(name):
+    return get_check_val(eval("check_"+name),name)
 
 #----------------#
 # init functions #
@@ -384,13 +394,13 @@ def init():
     if not args.hysteresis is None:
         store_value_to_file("hysteresis",args.hysteresis)
     else:
-        val = get_hysteresis()
+        val = get("hysteresis")
         if val is None:
             store_value_to_file("hysteresis",DEFAULT_HYSTERESIS)
     if not args.night_sleep is None:
         store_value_to_file("night_sleep",args.night_sleep)
     else:
-        val = get_night_sleep()
+        val = get("night_sleep")
         if val is None:
             store_value_to_file("night_sleep",DEFAULT_NIGHT_SLEEP)
     if not get("night_sleep") in [None,[]]:
@@ -441,10 +451,10 @@ def _control_loop():
         hysteresis = get_value_from_file("hysteresis")
         mintemp = target-(hysteresis/2)
         maxtemp = target+(hysteresis/2)
-        if not get_night_sleep() is None and is_sleeping_time():
+        if not get("night_sleep") is None and is_sleeping_time():
             # sleeping time stop
             if args.verbose:
-                print("klima sleeping until hour {}".format(get_night_sleep()[1]))
+                print("klima sleeping until hour {}".format(get("night_sleep")[1]))
             if not args.fan_only:
                 if not states[0] is OFF:
                     cooldown() #cooldown will return if allready standby or cooldown
