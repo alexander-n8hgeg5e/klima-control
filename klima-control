@@ -139,11 +139,12 @@ def write_state(state):
 
 def read_state():
     global states
-    with open('/run/'+RUN_SUBDIR+"/"+RUN_FILENAMES['state'],mode="rt") as f:
-        try:
-            return int(f.read())
-        except ValueError:
-            return UNKNOWN
+    try:
+        with open('/run/'+RUN_SUBDIR+"/"+RUN_FILENAMES['state'],mode="rt") as f:
+            try:
+                return int(f.read())
+    except:
+        return UNKNOWN
 
 def _run_state_function(from_states,function_state,target_state,function):
     global states
