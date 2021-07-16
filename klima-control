@@ -426,8 +426,8 @@ def _control_loop():
     while True:
         target     = get_value_from_file("target_temp")
         hysteresis = get_value_from_file("hysteresis")
-        mintemp = target-(args.hysteresis/2)
-        maxtemp = target+(args.hysteresis/2)
+        mintemp = target-(hysteresis/2)
+        maxtemp = target+(hysteresis/2)
         if not args.night_sleep is None and is_sleeping_time():
             # sleeping time stop
             if args.verbose:
