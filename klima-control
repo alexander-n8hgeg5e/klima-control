@@ -485,7 +485,7 @@ def parse_args():
     ap.add_argument('--verbose',action="store_true",default=False)
     ap.add_argument('--fan-only',action="store_true",default=False)
     ap.add_argument('--debug',action="store_true",default=False)
-    ap.add_argument('--state',action="store",default=None)
+    ap.add_argument('--state',action="store",default=UNKNOWN)
     ap.add_argument('--hysteresis',type=float,default=1.5)
     ap.add_argument('--night-sleep',nargs=2,metavar=('START-SLEEP-TIME','STOP-SLEEP-TIME'),type=float,default=None,help='makes the klima sleep during the time interval')
     ap.add_argument('--testing',action="store_true",default=False)
@@ -494,8 +494,6 @@ def parse_args():
     args=ap.parse_args()
     if not args.print_run_files_gen_cmds:
         args.state=read_state()
-    else:
-        args.state=UNKNOWN
     try:
         args.state=int(args.state)
     except ValueError:
