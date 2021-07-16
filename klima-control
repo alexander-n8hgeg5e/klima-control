@@ -49,7 +49,6 @@ sw_states = {
                 "fan_running"        : None,
                 }
 ensure_state_count=0
-open_files={}
 ENSURE_STATE_INTERVAL = 10
 NUM_INITIAL_ENSURE_STATE=1
 
@@ -331,11 +330,6 @@ def store_value_to_file(name,v):
     except Exception as e:
         log_exp( ERR, e )
 
-def close_open_files():
-    global open_files
-    for f in open_files:
-        f.close()
-
 def get_hysteresis():
     val = get_value_from_file("hysteresis")
     val = float(val)
@@ -440,7 +434,6 @@ def run_handle_exception(function):
             warn_exp(ee)
     finally:
         instant_off()
-        close_open_files()
 
 def _control_loop():
     while True:
