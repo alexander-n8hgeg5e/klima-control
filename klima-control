@@ -139,11 +139,8 @@ def write_state(state):
         f.write(str(state))                                   
 
 def read_state():
-    global states
     try:
-        with open('/run/'+RUN_SUBDIR+"/"+RUN_FILENAMES['state'],mode="rt") as f:
-            try:
-                return int(f.read())
+        return get_check_val(lambda x:int(x),"state")
     except:
         return UNKNOWN
 
@@ -447,8 +444,8 @@ def run_handle_exception(function):
 
 def _control_loop():
     while True:
-        target     = get_value_from_file("target_temp")
-        hysteresis = get_value_from_file("hysteresis")
+        target     = get("target_temp")
+        hysteresis = get("hysteresis")
         mintemp = target-(hysteresis/2)
         maxtemp = target+(hysteresis/2)
         if not get("night_sleep") is None and is_sleeping_time():
