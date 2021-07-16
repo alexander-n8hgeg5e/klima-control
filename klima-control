@@ -28,6 +28,7 @@ COOLDOWN_CYLCES=2
 COOLDOWN_CYLCE_SLEEP=20
 COOLDOWN_FINAL_FANTIME=20
 DEFAULT_HYSTERESIS=1.5
+DEFAULT_NIGHT_SLEEP=[]
 
 STATES =    {
             "UNKNOWN"     : -1,
@@ -352,6 +353,16 @@ def get_hysteresis():
     if 0 <= val:
         return val
 
+def get_night_sleep():
+    try:
+        val = get_value_from_file("night_sleep")
+        float(val[0])
+        float(val[1])
+        return val
+    except:
+        return None
+
+
 #----------------#
 # init functions #
 #----------------#
@@ -385,9 +396,6 @@ def init():
             if args.verbose:
                 print("Running cooldown to get valid state ...")
             run_handle_exception(cooldown)
-    if not args.night_sleep is None:
-        global localtime
-        from time import localtime
     if not args.target_temp is None:
         store_value_to_file("target_temp",args.target_temp)
     if not args.hysteresis is None:
@@ -398,6 +406,13 @@ def init():
             store_value_to_file("hysteresis",DEFAULT_HYSTERESIS)
     if not args.night_sleep is None:
         store_value_to_file("night_sleep",args.night_sleep)
+    else:
+        val = get_night_sleep()
+        if val is None:
+            store_value_to_file("night_sleep",DEFAULT_NIGHT_SLEEP)
+    if not get("night_sleep") in [None,[]]:
+        global localtime
+        from time import localtime
 
 
 #-------------------#
@@ -444,10 +459,10 @@ def _control_loop():
         hysteresis = get_value_from_file("hysteresis")
         mintemp = target-(hysteresis/2)
         maxtemp = target+(hysteresis/2)
-        if not args.night_sleep is None and is_sleeping_time():
+        if not get_night_sleep() is None and is_sleeping_time():
             # sleeping time stop
             if args.verbose:
-                print("klima sleeping until hour {}".format(args.night_sleep[1]))
+                print("klima sleeping until hour {}".format(get_night_sleep()[1]))
             if not args.fan_only:
                 if not states[0] is OFF:
                     cooldown() #cooldown will return if allready standby or cooldown
